@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>My Carbon Home</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.1/d3.min.js"></script>
+    <style type="text/css">
+        *{
+            font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+        }
+        .currentIndex{
+            color: white;
+            padding-bottom: 0.5em;
+            padding-top: 0.5em;
+            padding-left: 1em;
+        }
+        .currentIndex-low{
+            background-color: limegreen;
+        }
+        .currentIndex-moderate{
+            background-color: orange;
+        }
+        .currentIndex-high{
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+<a href="">Intensity</a>
+<a href="">Region</a>
+<h1>Power Generation Mix</h1>
+<div id="container" style="width:100%; height:400px;"></div>
+<p>This chart represents the means by which electricity is currently being produced in the UK.</p>
+<h1>Current Carbon Intensity</h1>
+<h2>The current carbon dioxide output</h2>
+<div class="currentIndex currentIndex-" th:attrappend="class=${currentIntensity.intensity.index}">
+    <p>Forecast: <span th:text="${currentIntensity.intensity.forecast}"></span>gCO2/kWh</p>
+    <p>Actual: <span th:text="${currentIntensity.intensity.actual}"></span>gCO2/kWh</p>
+    <p>Index: <span th:text="${currentIntensity.intensity.index}"></span></p>
+</div>
+<h2>Today's energy usage is:</h2>
+<p>Make this into a line graph</p>
+<div id="todaysIntensity"></div>
+<h2>Today's Factors Are:</h2>
+<div th:each="factor: ${factors.getData()}">
+    <p th:text="'Biomass: ' + ${factor.getBiomass()} + ${factor.getUnits()}"></p>
+    <p th:text="'Coal: ' + ${factor.getCoal()} + ${factor.getUnits()}"></p>
+    <p th:text="'Oil: ' + ${factor.getOil()} + ${factor.getUnits()}"></p>
+    <p th:text="'Gas (Combined Cycle): ' + ${factor.getGasCombinedCycle()} + ${factor.getUnits()}"></p>
+    <p th:text="'Gas (Open Cycle): ' + ${factor.getGasOpenCycle()} + ${factor.getUnits()}"></p>
+    <p th:text="'Nuclear: ' + ${factor.getNuclear()} + ${factor.getUnits()}"></p>
+    <p th:text="'Dutch Imports: ' + ${factor.getDutchImports()} + ${factor.getUnits()}"></p>
+    <p th:text="'French Imports: ' + ${factor.getFrenchImports()} + ${factor.getUnits()}"></p>
+    <p th:text="'Irish Imports: ' + ${factor.getIrishImports()} + ${factor.getUnits()}"></p>
+    <p th:text="'Hydro: ' + ${factor.getHydro()} + ${factor.getUnits()}"></p>
+    <p th:text="'Solar: ' + ${factor.getSolar()} + ${factor.getUnits()}"></p>
+    <p th:text="'Wind: ' + ${factor.getWind()} + ${factor.getUnits()}"></p>
+    <p th:text="'Pumped Storage: ' + ${factor.getPumpedStorage()} + ${factor.getUnits()}"></p>
+    <p th:text="'Other: ' + ${factor.getOther()} + ${factor.getUnits()}"></p>
+</div>
+<script th:inline="javascript">
+    /*Todays Intensity Line Graph*/
+    var linechart = d3.select("#todaysIntensity").append("svg");
+    linechart.attr("height", 400).attr("width", 1000);
+    var nodes = /*[[${lineChartData}]]*/ null;
+    var scale = d3.scale.linear()
+        .domain([300, 200])
+        .range([0, 400]);
+    var xAxis = d3.svg.axis().scale(scale).orient("left");
+    linechart.selectAll("circle .nodes")
+        .data(nodes)
+        .enter()
+        .append("svg:circle")
+        .attr("class", "nodes")
+        .attr("cx", function(d, i) {
+            var dist = (1000 - 60) / 48;
+            return i * dist + 60; })
+        .attr("cy", function(d) { return scale(d.value); })
+        .attr("r", "3px")
+        .attr("fill", "black");
+    linechart.append("g").call(xAxis)
+        .attr("transform", "translate(50, 0)");
+    /*var links = [
+        {source: nodes[0], target: nodes[1]},
+        {source: nodes[1], target: nodes[2]},
+        {source: nodes[2], target: nodes[3]},
+        {source: nodes[3], target: nodes[4]},
+        {source: nodes[4], target: nodes[5]},
+        {source: nodes[5], target: nodes[6]},
+        {source: nodes[6], target: nodes[7]},
+        {source: nodes[7], target: nodes[8]},
+        {source: nodes[8], target: nodes[9]}
+    ];
+    linechart.selectAll(".line")
+        .data(links)
+        .enter()
+        .append("line")
+        .attr("x1", function(d) { return d.source.x })
+        .attr("y1", function(d) { return d.source.y })
+        .attr("x2", function(d) { return d.target.x })
+        .attr("y2", function(d) { return d.target.y })
+        .style("stroke", "rgb(6,120,155)");*/
+
+    /*Generation Mix Pie Chart*/
+    document.addEventListener('DOMContentLoaded', function () {
+        var chartData = /*[[${pieChartData}]]*/ '{name: \'No data returned\', y: 100}';
+        Highcharts.chart('container', {
+            chart: {
+                plotBackgroundColor: null,
+                plotBorderWidth: null,
+                plotShadow: false,
+                type: 'pie'
+            },
+            title: {
+                text: 'Breakdown on the means of power generation and their contribution to the grid'
+            },
+            tooltip: {
+                pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: false
+                    },
+                    showInLegend: true
+                }
+            },
+            series: [{
+                name: 'Power Generation Type',
+                colorByPoint: true,
+                data: /*[[${pieChartData}]]*/ {name: 'No data returned', y: 100}
+            }]
+        });
+    });
+</script>
+</body>
+</html>

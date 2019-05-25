@@ -1,4 +1,5 @@
-* create a bar chart for todays intensity factors
+* Add x axis to bar chart
+* Add y axis to bar chart with labels
 * Add an about page
 * Add a "My Area" page
 * Add a form to the My Area page to enter a postcode

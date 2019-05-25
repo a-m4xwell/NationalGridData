@@ -6,23 +6,44 @@
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.1/d3.min.js"></script>
     <style type="text/css">
-        *{
+        * {
             font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
         }
-        .currentIndex{
+
+        .currentIndex {
             color: white;
             padding-bottom: 0.5em;
             padding-top: 0.5em;
             padding-left: 1em;
         }
-        .currentIndex-low{
+
+        .currentIndex-low {
             background-color: limegreen;
         }
-        .currentIndex-moderate{
+
+        .currentIndex-moderate {
             background-color: orange;
         }
-        .currentIndex-high{
+
+        .currentIndex-high {
             background-color: red;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: black;
+            shape-rendering: crispEdges;
+        }
+
+        .axis text {
+            font-family: sans-serif;
+            font-size: 11px;
+        }
+
+        #todaysIntensity svg{
+            display: block;
+            margin: auto;
         }
     </style>
 </head>
@@ -61,46 +82,169 @@
 </div>
 <script th:inline="javascript">
     /*Todays Intensity Line Graph*/
-    var linechart = d3.select("#todaysIntensity").append("svg");
-    linechart.attr("height", 400).attr("width", 1000);
+    var buffer = 10;
+    var paddingTop = 10;
+    var paddingBottom = 30;
+    var paddingLeft = 50;
+    var height = 400;
+    var width = screen.width / 10 * 8;
+
+    var linechart = d3.select("#todaysIntensity").append("svg")
+        .attr("height", height + paddingTop + paddingBottom)
+        .attr("width", width + paddingLeft);
+
+    /*Forecast nodes, these are gotten from the model if present, otherwise null*/
     var nodes = /*[[${lineChartData}]]*/ null;
-    var scale = d3.scale.linear()
-        .domain([300, 200])
-        .range([0, 400]);
-    var xAxis = d3.svg.axis().scale(scale).orient("left");
+
+    /*Helper method, get the horizontal position of a data point*/
+    var getYValue = function (index) {
+        var distBetweenNodes = width / nodes.length; /*needs to be more dynamic, how dose it handle two datasets*/
+        return index * distBetweenNodes + paddingLeft;
+    };
+
+    /*Get the maximum value from the data*/
+    var scaleMax = function () {
+        if (nodes != null) {
+            var max = nodes[0].value;
+            for (var i = 1; i < nodes.length; i++) {
+                if(nodes[i].value > max){
+                    max = nodes[i].value;
+                }
+            }
+        }
+        return max + buffer;
+    };
+
+    /*Get the minimum value from the data*/
+    var scaleMin = function () {
+        if (nodes != null) {
+            var min = nodes[0].value;
+            for (var i = 1; i < nodes.length; i++) {
+                if(nodes[i].value < min){
+                    min = nodes[i].value;
+                }
+            }
+        }
+        return min - buffer;
+    };
+
+    /*Set the vertical scale*/
+    var scaleX = d3.scale.linear()
+        .domain([scaleMax(), scaleMin()])
+        .range([0, height]);
+
+    /*Set the horizontal scale*/
+    var scaleY = d3.time.scale()
+        .domain([
+            new Date(nodes[0].from),
+            new Date(nodes[nodes.length -1].from)
+        ])
+        .range([0, width]);
+
+    /*Create the horizontal axis*/
+    var yAxis = d3.svg.axis().scale(scaleY).orient("bottom").ticks(12);
+
+    /*Create the vertical axis*/
+    var xAxis = d3.svg.axis().scale(scaleX).orient("left");
+
+    /*Append both axises to the chart*/
+    linechart.append("g").attr("transform", "translate(" + paddingLeft + "," + height + ")").attr("class", "axis") .call(yAxis);
+    linechart.append("g").attr("transform", "translate(" + paddingLeft + ", 0)").attr("class", "axis") .call(xAxis);
+
+    /*Get the line values*/
+    var getLinks = function(dataset){
+        var links = [];
+        for(var i = 0; i < dataset.length - 1; i++){
+            var source = {
+                x: getYValue(i),
+                y: scaleX(dataset[i].value)
+            };
+            var target = {
+                x: getYValue(i + 1),
+                y: scaleX(dataset[i + 1].value)
+            };
+            links.push({source: source, target: target});
+        }
+        return links;
+    };
+
+    /*Create the circle points for forecast data*/
     linechart.selectAll("circle .nodes")
         .data(nodes)
         .enter()
         .append("svg:circle")
         .attr("class", "nodes")
-        .attr("cx", function(d, i) {
-            var dist = (1000 - 60) / 48;
-            return i * dist + 60; })
-        .attr("cy", function(d) { return scale(d.value); })
+        .attr("cx", function (d, i) {
+            return getYValue(i);
+        })
+        .attr("cy", function (d) {
+            return scaleX(d.value);
+        })
         .attr("r", "3px")
-        .attr("fill", "black");
-    linechart.append("g").call(xAxis)
-        .attr("transform", "translate(50, 0)");
-    /*var links = [
-        {source: nodes[0], target: nodes[1]},
-        {source: nodes[1], target: nodes[2]},
-        {source: nodes[2], target: nodes[3]},
-        {source: nodes[3], target: nodes[4]},
-        {source: nodes[4], target: nodes[5]},
-        {source: nodes[5], target: nodes[6]},
-        {source: nodes[6], target: nodes[7]},
-        {source: nodes[7], target: nodes[8]},
-        {source: nodes[8], target: nodes[9]}
-    ];
+        .attr("fill", "blue");
+
+    /*Create the lines to join the circle points for forecast data*/
     linechart.selectAll(".line")
-        .data(links)
+        .data(getLinks(nodes))
         .enter()
         .append("line")
         .attr("x1", function(d) { return d.source.x })
         .attr("y1", function(d) { return d.source.y })
         .attr("x2", function(d) { return d.target.x })
         .attr("y2", function(d) { return d.target.y })
-        .style("stroke", "rgb(6,120,155)");*/
+        .style("stroke", "blue")
+        .style("stroke-width", "6");
+
+    var actualpoints = new Array();
+    for(var i = 0; i < nodes.length; i++){
+        if(nodes[i].actual > 0){
+            actualpoints.push(nodes[i].actual);
+        }else{
+            break;
+        }
+    }
+
+    /*Create the circle points for the actual data*/
+    linechart.selectAll("circle .nodes")
+        .data(actualpoints)
+        .enter()
+        .append("svg:circle")
+        .attr("class", "nodes")
+        .attr("cx", function (d, i) {
+            return getYValue(i);
+        })
+        .attr("cy", function (d) {
+            return scaleX(d);
+        })
+        .attr("r", "3px")
+        .attr("fill", "red");
+
+    var getActualLinks = function(dataset){
+        var links = [];
+        for(var i = 0; i < dataset.length - 1; i++){
+            var source = {
+                x: getYValue(i),
+                y: scaleX(dataset[i])
+            };
+            var target = {
+                x: getYValue(i + 1),
+                y: scaleX(dataset[i + 1])
+            };
+            links.push({source: source, target: target});
+        }
+        return links;
+    };
+
+    linechart.selectAll(".line")
+        .data(getActualLinks(actualpoints))
+        .enter()
+        .append("line")
+        .attr("x1", function(d) { return d.source.x })
+        .attr("y1", function(d) { return d.source.y })
+        .attr("x2", function(d) { return d.target.x })
+        .attr("y2", function(d) { return d.target.y })
+        .style("stroke", "red")
+        .style("stroke-width", "6");
 
     /*Generation Mix Pie Chart*/
     document.addEventListener('DOMContentLoaded', function () {

@@ -1,0 +1,7 @@
+* create a bar chart for todays intensity factors
+* Add an about page
+* Add a "My Area" page
+* Add a form to the My Area page to enter a postcode
+* Run a query on the postcode and pull back the data
+* turn that data into a visualisation
+* fix chart scaling on mobile

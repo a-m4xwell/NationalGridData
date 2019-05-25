@@ -1,6 +1,5 @@
 package com.andrew.marvin.DataVisualization;
 
-import com.andrew.marvin.CarbonIntensityDomain.Data;
 import com.andrew.marvin.CarbonIntensityDomain.GenerationMixData;
 import com.andrew.marvin.CarbonIntensityDomain.Generationmix;
 import com.andrew.marvin.CarbonIntensityDomain.Intensity;
@@ -11,9 +10,9 @@ import java.util.Optional;
 
 public class DataVisualisationBuilder {
 
-    public List<PieChartData> buildPieChartData(GenerationMixData generationMixData){
+    public List<PieChartData> buildPieChartData(GenerationMixData generationMixData) {
         Optional<List<Generationmix>> optionalGenerationmixes = Optional.ofNullable(generationMixData.getData().getGenerationmix());
-        if(optionalGenerationmixes.isPresent()) {
+        if (optionalGenerationmixes.isPresent()) {
             List<Generationmix> generationmix = optionalGenerationmixes.get();
             ArrayList<PieChartData> data = new ArrayList<>();
 
@@ -28,11 +27,16 @@ public class DataVisualisationBuilder {
         return new ArrayList<>();
     }
 
-    public List<LineChartNode> buildLineChartData(List<Intensity> intensityData){
+    public List<LineChartNode> buildLineChartData(List<Intensity> intensityData) {
         ArrayList<LineChartNode> nodes = new ArrayList<>();
-        for(Intensity intensity: intensityData){
+        for (Intensity intensity : intensityData) {
             LineChartNode node = new LineChartNode();
             node.setValue(intensity.getIntensity().getForecast());
+            if(intensity.getIntensity().getActual() != null){
+                node.setActual(intensity.getIntensity().getActual());
+            }
+            node.setFrom(intensity.getFrom());
+            node.setTo(intensity.getTo());
             nodes.add(node);
         }
         return nodes;

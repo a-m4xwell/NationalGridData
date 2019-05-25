@@ -41,7 +41,7 @@
             font-size: 11px;
         }
 
-        #todaysIntensity svg{
+        #todaysIntensity svg, #averageIntensity svg{
             display: block;
             margin: auto;
         }
@@ -63,25 +63,10 @@
 <h2>Today's energy usage is:</h2>
 <p>Make this into a line graph</p>
 <div id="todaysIntensity"></div>
-<h2>Today's Factors Are:</h2>
-<div th:each="factor: ${factors.getData()}">
-    <p th:text="'Biomass: ' + ${factor.getBiomass()} + ${factor.getUnits()}"></p>
-    <p th:text="'Coal: ' + ${factor.getCoal()} + ${factor.getUnits()}"></p>
-    <p th:text="'Oil: ' + ${factor.getOil()} + ${factor.getUnits()}"></p>
-    <p th:text="'Gas (Combined Cycle): ' + ${factor.getGasCombinedCycle()} + ${factor.getUnits()}"></p>
-    <p th:text="'Gas (Open Cycle): ' + ${factor.getGasOpenCycle()} + ${factor.getUnits()}"></p>
-    <p th:text="'Nuclear: ' + ${factor.getNuclear()} + ${factor.getUnits()}"></p>
-    <p th:text="'Dutch Imports: ' + ${factor.getDutchImports()} + ${factor.getUnits()}"></p>
-    <p th:text="'French Imports: ' + ${factor.getFrenchImports()} + ${factor.getUnits()}"></p>
-    <p th:text="'Irish Imports: ' + ${factor.getIrishImports()} + ${factor.getUnits()}"></p>
-    <p th:text="'Hydro: ' + ${factor.getHydro()} + ${factor.getUnits()}"></p>
-    <p th:text="'Solar: ' + ${factor.getSolar()} + ${factor.getUnits()}"></p>
-    <p th:text="'Wind: ' + ${factor.getWind()} + ${factor.getUnits()}"></p>
-    <p th:text="'Pumped Storage: ' + ${factor.getPumpedStorage()} + ${factor.getUnits()}"></p>
-    <p th:text="'Other: ' + ${factor.getOther()} + ${factor.getUnits()}"></p>
-</div>
+<h2>These are the average carbon intensity output of power sources:</h2>
+<div id="averageIntensity"></div>
+<div th:text="${factors}"></div>
 <script th:inline="javascript">
-    /*Todays Intensity Line Graph*/
     var buffer = 10;
     var paddingTop = 10;
     var paddingBottom = 30;
@@ -89,6 +74,49 @@
     var height = 400;
     var width = screen.width / 10 * 8;
 
+    /*Bar Graph*/
+    var barChart = d3.select("#averageIntensity").append("svg")
+        .attr("height", height + paddingTop + paddingBottom)
+        .attr("width", width + paddingLeft);
+
+    var barNodes = /*[[${factors}]]*/ null;
+    var barWidth = (width - paddingLeft) / barNodes.length + 2;
+
+    var barHeightScale = d3.scale.linear()
+        .domain([0, 1000])
+        .range([0, height]);
+
+    barChart.selectAll("rect .bars")
+        .data(barNodes)
+        .enter()
+        .append("svg:rect")
+        .attr("class", "bars")
+        .attr("x", function (d, i) {
+            return (width / barNodes.length * i) + paddingLeft;
+        })
+        .attr("y", function (d) {
+            return height - 50 - barHeightScale(d.value);
+        })
+        .attr("width", barWidth)
+        .attr("height", function (d) {
+            return barHeightScale(d.value) + 1;
+        })
+        .attr("fill", "green");
+
+    /*Add the text*/
+    barChart.selectAll("text")
+        .data(barNodes)
+        .enter()
+        .append("text")
+        .text(function (d) {
+            return d.name;
+        })
+        .attr("x", function (d, i) {
+            return (width / barNodes.length * i) + paddingLeft;
+        })
+        .attr("y", height - 30);
+
+    /*Todays Intensity Line Graph*/
     var linechart = d3.select("#todaysIntensity").append("svg")
         .attr("height", height + paddingTop + paddingBottom)
         .attr("width", width + paddingLeft);

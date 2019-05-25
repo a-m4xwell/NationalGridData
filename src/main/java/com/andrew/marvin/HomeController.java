@@ -31,7 +31,7 @@ public class HomeController {
                 .buildPieChartData(intensityCache.getGenerationMixData()));
         model.addAttribute("lineChartData", dataVisualisationBuilder
                 .buildLineChartData(todaysIntensityData.getData()));
-        model.addAttribute("factors", factors);
+        model.addAttribute("factors", dataVisualisationBuilder.buildBarChartData(factors));
 
         return "home";
     }

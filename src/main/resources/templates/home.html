@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <title>My Carbon Home</title>
     <script src="https://code.highcharts.com/highcharts.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.1/d3.min.js"></script>
+    <script type="application/javascript" src="../static/d3.min.js"></script>
+    <script src="https://d3js.org/d3.v5.js"></script>
     <style type="text/css">
         * {
             font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
@@ -80,57 +81,62 @@
         .attr("width", width + paddingLeft);
 
     var barNodes = /*[[${factors}]]*/ null;
-    var barWidth = (width - paddingLeft) / barNodes.length + 2;
 
-    var barHeightScale = d3.scale.linear()
-        .domain([0, 1000])
-        .range([0, height]);
+    var ordinalValues = new Array();
+
+    for(var i = 0; i < barNodes.length; i++){
+        ordinalValues.push(barNodes[i].name);
+    }
+
+    //Build the verticle axis
+    var scaleLin = d3.scaleLinear().domain([1100, 0]).range([0, height]);
+    var axisVer = d3.axisLeft(scaleLin);
+    barChart.append("g")
+        .attr("transform", "translate(" + paddingLeft + ", " + paddingTop + ")")
+        .call(axisVer);
+
+    //Build the horizontal axis
+    var scaleBand = d3.scaleBand().domain(ordinalValues).range([0, width]);
+    var axisHor = d3.axisBottom(scaleBand);
+    barChart.append("g")
+        .attr("transform", "translate(" + paddingLeft + ", " + (height + paddingTop) + ")").call(axisHor);
+
+    //reversed scale for setting bar height
+    var scaleLinBar = d3.scaleLinear().domain([0, 1100]).range([0, height]);
 
     barChart.selectAll("rect .bars")
         .data(barNodes)
         .enter()
         .append("svg:rect")
         .attr("class", "bars")
-        .attr("x", function (d, i) {
-            return (width / barNodes.length * i) + paddingLeft;
+        .attr("x", function (d) {
+            return scaleBand(d.name) + paddingLeft;
         })
         .attr("y", function (d) {
-            return height - 50 - barHeightScale(d.value);
+            return paddingTop + height - scaleLinBar(d.value);
         })
-        .attr("width", barWidth)
+        .attr("width", scaleBand.bandwidth())
         .attr("height", function (d) {
-            return barHeightScale(d.value) + 1;
+            return scaleLinBar(d.value);
         })
         .attr("fill", "green");
 
-    /*Add the text*/
-    barChart.selectAll("text")
-        .data(barNodes)
-        .enter()
-        .append("text")
-        .text(function (d) {
-            return d.name;
-        })
-        .attr("x", function (d, i) {
-            return (width / barNodes.length * i) + paddingLeft;
-        })
-        .attr("y", height - 30);
-
-    /*Todays Intensity Line Graph*/
+/*
+    /!*Todays Intensity Line Graph*!/
     var linechart = d3.select("#todaysIntensity").append("svg")
         .attr("height", height + paddingTop + paddingBottom)
         .attr("width", width + paddingLeft);
 
-    /*Forecast nodes, these are gotten from the model if present, otherwise null*/
-    var nodes = /*[[${lineChartData}]]*/ null;
+    /!*Forecast nodes, these are gotten from the model if present, otherwise null*!/
+    var nodes = /!*[[${lineChartData}]]*!/ null;
 
-    /*Helper method, get the horizontal position of a data point*/
+    /!*Helper method, get the horizontal position of a data point*!/
     var getYValue = function (index) {
-        var distBetweenNodes = width / nodes.length; /*needs to be more dynamic, how dose it handle two datasets*/
+        var distBetweenNodes = width / nodes.length; /!*needs to be more dynamic, how dose it handle two datasets*!/
         return index * distBetweenNodes + paddingLeft;
     };
 
-    /*Get the maximum value from the data*/
+    /!*Get the maximum value from the data*!/
     var scaleMax = function () {
         if (nodes != null) {
             var max = nodes[0].value;
@@ -143,7 +149,7 @@
         return max + buffer;
     };
 
-    /*Get the minimum value from the data*/
+    /!*Get the minimum value from the data*!/
     var scaleMin = function () {
         if (nodes != null) {
             var min = nodes[0].value;
@@ -156,12 +162,12 @@
         return min - buffer;
     };
 
-    /*Set the vertical scale*/
+    /!*Set the vertical scale*!/
     var scaleX = d3.scale.linear()
         .domain([scaleMax(), scaleMin()])
         .range([0, height]);
 
-    /*Set the horizontal scale*/
+    /!*Set the horizontal scale*!/
     var scaleY = d3.time.scale()
         .domain([
             new Date(nodes[0].from),
@@ -169,17 +175,17 @@
         ])
         .range([0, width]);
 
-    /*Create the horizontal axis*/
+    /!*Create the horizontal axis*!/
     var yAxis = d3.svg.axis().scale(scaleY).orient("bottom").ticks(12);
 
-    /*Create the vertical axis*/
+    /!*Create the vertical axis*!/
     var xAxis = d3.svg.axis().scale(scaleX).orient("left");
 
-    /*Append both axises to the chart*/
+    /!*Append both axises to the chart*!/
     linechart.append("g").attr("transform", "translate(" + paddingLeft + "," + height + ")").attr("class", "axis") .call(yAxis);
     linechart.append("g").attr("transform", "translate(" + paddingLeft + ", 0)").attr("class", "axis") .call(xAxis);
 
-    /*Get the line values*/
+    /!*Get the line values*!/
     var getLinks = function(dataset){
         var links = [];
         for(var i = 0; i < dataset.length - 1; i++){
@@ -196,7 +202,7 @@
         return links;
     };
 
-    /*Create the circle points for forecast data*/
+    /!*Create the circle points for forecast data*!/
     linechart.selectAll("circle .nodes")
         .data(nodes)
         .enter()
@@ -211,7 +217,7 @@
         .attr("r", "3px")
         .attr("fill", "blue");
 
-    /*Create the lines to join the circle points for forecast data*/
+    /!*Create the lines to join the circle points for forecast data*!/
     linechart.selectAll(".line")
         .data(getLinks(nodes))
         .enter()
@@ -232,7 +238,7 @@
         }
     }
 
-    /*Create the circle points for the actual data*/
+    /!*Create the circle points for the actual data*!/
     linechart.selectAll("circle .nodes")
         .data(actualpoints)
         .enter()
@@ -272,7 +278,7 @@
         .attr("x2", function(d) { return d.target.x })
         .attr("y2", function(d) { return d.target.y })
         .style("stroke", "red")
-        .style("stroke-width", "6");
+        .style("stroke-width", "6");*/
 
     /*Generation Mix Pie Chart*/
     document.addEventListener('DOMContentLoaded', function () {

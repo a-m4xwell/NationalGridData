@@ -68,12 +68,11 @@
 <div id="averageIntensity"></div>
 <div th:text="${factors}"></div>
 <script th:inline="javascript">
-    var buffer = 10;
     var paddingTop = 10;
     var paddingBottom = 30;
     var paddingLeft = 50;
     var height = 400;
-    var width = screen.width / 10 * 8;
+    var width = (screen.width / 10) * 8;
 
     /*Bar Graph*/
     var barChart = d3.select("#averageIntensity").append("svg")
@@ -121,15 +120,16 @@
         })
         .attr("fill", "green");
 
-/*
-    /!*Todays Intensity Line Graph*!/
+
+    /*Todays Intensity Line Graph*/
     var linechart = d3.select("#todaysIntensity").append("svg")
         .attr("height", height + paddingTop + paddingBottom)
         .attr("width", width + paddingLeft);
 
-    /!*Forecast nodes, these are gotten from the model if present, otherwise null*!/
-    var nodes = /!*[[${lineChartData}]]*!/ null;
+    /*Forecast nodes, these are gotten from the model if present, otherwise null*/
+    var nodes = /*[[${lineChartData}]]*/ null;
 
+/*
     /!*Helper method, get the horizontal position of a data point*!/
     var getYValue = function (index) {
         var distBetweenNodes = width / nodes.length; /!*needs to be more dynamic, how dose it handle two datasets*!/

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>My Carbon Home</title>
     <script src="https://code.highcharts.com/highcharts.js"></script>
-    <script type="application/javascript" src="../static/d3.min.js"></script>
     <script src="https://d3js.org/d3.v5.js"></script>
     <style type="text/css">
         * {
@@ -16,7 +15,18 @@
             padding-bottom: 0.5em;
             padding-top: 0.5em;
             padding-left: 1em;
+            padding-right: 1em;
+            margin-top: 1em;
+            margin-bottom: 1em;
+            font-size: 21px;
         }
+
+        .center{
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: 21px;
+         }
 
         .currentIndex-low {
             background-color: limegreen;
@@ -49,28 +59,39 @@
     </style>
 </head>
 <body>
-<a href="">Intensity</a>
-<a href="">Region</a>
-<h1>Power Generation Mix</h1>
-<div id="container" style="width:100%; height:400px;"></div>
-<p>This chart represents the means by which electricity is currently being produced in the UK.</p>
-<h1>Current Carbon Intensity</h1>
-<h2>The current carbon dioxide output</h2>
-<div class="currentIndex currentIndex-" th:attrappend="class=${currentIntensity.intensity.index}">
-    <p>Forecast: <span th:text="${currentIntensity.intensity.forecast}"></span>gCO2/kWh</p>
-    <p>Actual: <span th:text="${currentIntensity.intensity.actual}"></span>gCO2/kWh</p>
-    <p>Index: <span th:text="${currentIntensity.intensity.index}"></span></p>
+<div class="header" style="height: 80px">
+    <a href="/home">Home</a> | <a href="/about">About</a>
 </div>
-<h2>Today's energy usage is:</h2>
-<p>Make this into a line graph</p>
+<div class="center currentIndex currentIndex-" th:attrappend="class=${currentIntensity.intensity.index}">
+    <h1>Carbon Intensity Level: <b><span th:text="${currentIntensity.intensity.index}"></span></b></h1>
+    <p>Forecast: <b><span th:text="${currentIntensity.intensity.forecast}"></span> gCO2/kWh</b></p>
+    <p>Actual: <b><span th:text="${currentIntensity.intensity.actual}"></span> gCO2/kWh</b></p>
+    <p><b>What is this?:</b> This is how much carbon dioxide is currently being generated per kilowatt hour to
+        maintain an electrical supply to the national grid.</p>
+</div>
+<h1 class="center">Generation Mix</h1>
+<p class="center"><b>What is this?</b><br>This is a breakdown of how much each source of electricity is contributing to
+    the grid. It is interesting to view this repeatedly over the course of the day, you may notice on windy days that
+    the majority of the electricity is being generated at wind farms, additionally when demand is high and natural
+    source cannot meet that demand you may see a large portion of our electricity is coming from gas power stations.</p>
+<div id="container" style="width:100%; height:400px;"></div>
+<h1 class="center">Todays Carbon Intensity</h1>
+<p class="center">The carbon intensity for the UK, that is how much carbon dioxide is produced, varies throughout the
+    day. It is typically higher in the morning and the evening and lower in the middle of the day. The chart below
+    shows the carbon intensity today. The blue line represents what has been forecast and the red line represents the
+    actual carbon intensity</p>
 <div id="todaysIntensity"></div>
-<h2>These are the average carbon intensity output of power sources:</h2>
+<h2 class="center">Sources Of Carbon</h2>
+<p class="center">Different source of power generate varying amounts of carbon dioxide. This chart displays the average
+carbon output for each source, measured in grams per kilowatt hour. As you can see Coal and Oil produce a large amount
+of carbon dioxide whereas Nuclear, Wind, Solar and Hydro generate almost nothing.</p>
 <div id="averageIntensity"></div>
-<div th:text="${factors}"></div>
+<div class="footer" style="height: 100px"></div>
 <script th:inline="javascript">
     var paddingTop = 10;
     var paddingBottom = 30;
     var paddingLeft = 50;
+    var paddingRight = 20;
     var height = 400;
     var width = (screen.width / 10) * 8;
 
@@ -124,161 +145,168 @@
     /*Todays Intensity Line Graph*/
     var linechart = d3.select("#todaysIntensity").append("svg")
         .attr("height", height + paddingTop + paddingBottom)
-        .attr("width", width + paddingLeft);
+        .attr("width", width + paddingLeft + paddingRight);
 
     /*Forecast nodes, these are gotten from the model if present, otherwise null*/
     var nodes = /*[[${lineChartData}]]*/ null;
 
-/*
-    /!*Helper method, get the horizontal position of a data point*!/
-    var getYValue = function (index) {
-        var distBetweenNodes = width / nodes.length; /!*needs to be more dynamic, how dose it handle two datasets*!/
-        return index * distBetweenNodes + paddingLeft;
-    };
+    //get actual values that are not null or 0
+    var actual = new Array();
 
-    /!*Get the maximum value from the data*!/
-    var scaleMax = function () {
-        if (nodes != null) {
-            var max = nodes[0].value;
-            for (var i = 1; i < nodes.length; i++) {
-                if(nodes[i].value > max){
-                    max = nodes[i].value;
-                }
-            }
-        }
-        return max + buffer;
-    };
-
-    /!*Get the minimum value from the data*!/
-    var scaleMin = function () {
-        if (nodes != null) {
-            var min = nodes[0].value;
-            for (var i = 1; i < nodes.length; i++) {
-                if(nodes[i].value < min){
-                    min = nodes[i].value;
-                }
-            }
-        }
-        return min - buffer;
-    };
-
-    /!*Set the vertical scale*!/
-    var scaleX = d3.scale.linear()
-        .domain([scaleMax(), scaleMin()])
-        .range([0, height]);
-
-    /!*Set the horizontal scale*!/
-    var scaleY = d3.time.scale()
-        .domain([
-            new Date(nodes[0].from),
-            new Date(nodes[nodes.length -1].from)
-        ])
-        .range([0, width]);
-
-    /!*Create the horizontal axis*!/
-    var yAxis = d3.svg.axis().scale(scaleY).orient("bottom").ticks(12);
-
-    /!*Create the vertical axis*!/
-    var xAxis = d3.svg.axis().scale(scaleX).orient("left");
-
-    /!*Append both axises to the chart*!/
-    linechart.append("g").attr("transform", "translate(" + paddingLeft + "," + height + ")").attr("class", "axis") .call(yAxis);
-    linechart.append("g").attr("transform", "translate(" + paddingLeft + ", 0)").attr("class", "axis") .call(xAxis);
-
-    /!*Get the line values*!/
-    var getLinks = function(dataset){
-        var links = [];
-        for(var i = 0; i < dataset.length - 1; i++){
-            var source = {
-                x: getYValue(i),
-                y: scaleX(dataset[i].value)
-            };
-            var target = {
-                x: getYValue(i + 1),
-                y: scaleX(dataset[i + 1].value)
-            };
-            links.push({source: source, target: target});
-        }
-        return links;
-    };
-
-    /!*Create the circle points for forecast data*!/
-    linechart.selectAll("circle .nodes")
-        .data(nodes)
-        .enter()
-        .append("svg:circle")
-        .attr("class", "nodes")
-        .attr("cx", function (d, i) {
-            return getYValue(i);
-        })
-        .attr("cy", function (d) {
-            return scaleX(d.value);
-        })
-        .attr("r", "3px")
-        .attr("fill", "blue");
-
-    /!*Create the lines to join the circle points for forecast data*!/
-    linechart.selectAll(".line")
-        .data(getLinks(nodes))
-        .enter()
-        .append("line")
-        .attr("x1", function(d) { return d.source.x })
-        .attr("y1", function(d) { return d.source.y })
-        .attr("x2", function(d) { return d.target.x })
-        .attr("y2", function(d) { return d.target.y })
-        .style("stroke", "blue")
-        .style("stroke-width", "6");
-
-    var actualpoints = new Array();
-    for(var i = 0; i < nodes.length; i++){
-        if(nodes[i].actual > 0){
-            actualpoints.push(nodes[i].actual);
-        }else{
+    for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].actual > 0) {
+            actual.push({
+                "actual": nodes[i].actual,
+                "from": nodes[i].from,
+                "to": nodes[i].to
+            })
+        } else {
             break;
         }
     }
 
-    /!*Create the circle points for the actual data*!/
-    linechart.selectAll("circle .nodes")
-        .data(actualpoints)
+    var scaleHor = d3.scaleTime().domain([
+        new Date(nodes[0].to),
+        new Date(nodes[nodes.length - 1].to)
+    ]).range([0, width]);
+
+    var findMax = function () {
+        var maxForecast = nodes[0].value;
+        var maxActual = nodes[0].actual;
+
+        for(var i = 0; i < nodes.length; i++){
+            if(nodes[i].value > maxForecast){
+                maxForecast = nodes[i].value;
+            }
+            if(nodes[i].actual > maxActual){
+                maxActual = nodes[i].actual;
+            }
+        }
+
+        if(maxForecast > maxActual){
+            return maxForecast;
+        }else{
+            return maxActual;
+        }
+    };
+
+    var findMin = function () {
+        var minForecast = nodes[0].value;
+        var minActual = nodes[0].actual;
+
+        for(var i = 0; i < nodes.length; i++){
+            if(nodes[i].value < minForecast){
+                minForecast = nodes[i].value;
+            }
+            if(nodes[i].actual !== 0) {
+                if (nodes[i].actual < minActual) {
+                    minActual = nodes[i].actual;
+                }
+            }
+        }
+
+        if(minForecast < minActual){
+            return minForecast;
+        }else{
+            return minActual;
+        }
+    };
+
+    var scaleVer = d3.scaleLinear().domain([findMax() + 10, findMin() - 10]).range([0, height]);
+
+    var axisVer = d3.axisLeft(scaleVer);
+    var axisHor = d3.axisBottom(scaleHor);
+
+    linechart.append("g")
+        .attr("transform", "translate(" + paddingLeft + "," + paddingTop + ")")
+        .call(axisVer);
+    linechart.append("g")
+        .attr("transform", "translate(" + paddingLeft + "," + (height + paddingTop) + ")")
+        .call(axisHor);
+
+    var forecastLines = new Array();
+    for (var i = 0; i < (nodes.length - 1); i++) {
+        forecastLines.push({
+            "sourceX": scaleHor(new Date(nodes[i].to)) + paddingLeft,
+            "sourceY": scaleVer(nodes[i].value) + paddingTop,
+            "targetX": scaleHor(new Date(nodes[i + 1].to)) + paddingLeft,
+            "targetY": scaleVer(nodes[i + 1].value) + paddingTop
+        })
+    }
+
+    var actualLines = new Array();
+    for (var i = 0; i < (actual.length - 1); i++) {
+        actualLines.push({
+            "sourceX": scaleHor(new Date(actual[i].to)) + paddingLeft,
+            "sourceY": scaleVer(actual[i].actual) + paddingTop,
+            "targetX": scaleHor(new Date(actual[i + 1].to)) + paddingLeft,
+            "targetY": scaleVer(actual[i + 1].actual) + paddingTop
+        })
+    }
+
+    linechart.selectAll("Circle")
+        .data(nodes)
         .enter()
         .append("svg:circle")
-        .attr("class", "nodes")
-        .attr("cx", function (d, i) {
-            return getYValue(i);
+        .attr("cx", function (d) {
+            return scaleHor(new Date(d.to)) + paddingLeft;
         })
         .attr("cy", function (d) {
-            return scaleX(d);
+            return scaleVer(d.value) + paddingTop;
+        })
+        .attr("r", "3px")
+        .attr("fill", "blue");
+
+    linechart.selectAll(".line")
+        .data(forecastLines)
+        .enter()
+        .append("line")
+        .attr("x1", function (d) {
+            return d.sourceX;
+        })
+        .attr("y1", function (d) {
+            return d.sourceY;
+        })
+        .attr("x2", function (d) {
+            return d.targetX;
+        })
+        .attr("y2", function (d) {
+            return d.targetY;
+        })
+        .style("stroke", "blue")
+        .style("stroke-width", "6px");
+
+    linechart.selectAll("Circle")
+        .data(actual)
+        .enter()
+        .append("svg:circle")
+        .attr("cx", function (d) {
+            return scaleHor(new Date(d.to)) + paddingLeft;
+        })
+        .attr("cy", function (d) {
+            return scaleVer(d.actual) + paddingTop;
         })
         .attr("r", "3px")
         .attr("fill", "red");
 
-    var getActualLinks = function(dataset){
-        var links = [];
-        for(var i = 0; i < dataset.length - 1; i++){
-            var source = {
-                x: getYValue(i),
-                y: scaleX(dataset[i])
-            };
-            var target = {
-                x: getYValue(i + 1),
-                y: scaleX(dataset[i + 1])
-            };
-            links.push({source: source, target: target});
-        }
-        return links;
-    };
-
     linechart.selectAll(".line")
-        .data(getActualLinks(actualpoints))
+        .data(actualLines)
         .enter()
         .append("line")
-        .attr("x1", function(d) { return d.source.x })
-        .attr("y1", function(d) { return d.source.y })
-        .attr("x2", function(d) { return d.target.x })
-        .attr("y2", function(d) { return d.target.y })
+        .attr("x1", function (d) {
+            return d.sourceX;
+        })
+        .attr("y1", function (d) {
+            return d.sourceY;
+        })
+        .attr("x2", function (d) {
+            return d.targetX;
+        })
+        .attr("y2", function (d) {
+            return d.targetY;
+        })
         .style("stroke", "red")
-        .style("stroke-width", "6");*/
+        .style("stroke-width", "6px");
 
     /*Generation Mix Pie Chart*/
     document.addEventListener('DOMContentLoaded', function () {

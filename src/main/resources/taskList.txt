@@ -2,7 +2,7 @@
 * Add a legend to the line chart
 * Add notes to the charts to explain the data
 * Make the charting js modular
-* Add a new Dataset, gower generation mix timeline
+* Add a new chart, generation mix over time
 * Add an about page
 * Add a "My Area" page
 * Add a form to the My Area page to enter a postcode

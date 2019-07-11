@@ -21,12 +21,12 @@
             font-size: 21px;
         }
 
-        .center{
+        .center {
             width: 80%;
             margin-left: auto;
             margin-right: auto;
             font-size: 21px;
-         }
+        }
 
         .currentIndex-low {
             background-color: limegreen;
@@ -52,7 +52,7 @@
             font-size: 11px;
         }
 
-        #todaysIntensity svg, #averageIntensity svg{
+        #todaysIntensity svg, #averageIntensity svg {
             display: block;
             margin: auto;
         }
@@ -69,6 +69,13 @@
     <p><b>What is this?:</b> This is how much carbon dioxide is currently being generated per kilowatt hour to
         maintain an electrical supply to the national grid.</p>
 </div>
+<div class="center">
+    <form method="post" action="#" th:action="@{/home}" th:object="${formObject}">
+        <label for="localPostcode">Local Postcode</label>
+        <input th:field="*{localPostcode}" type="text" id="localPostcode"/>
+        <input type="submit" value="Submit"/>
+    </form>
+</div>
 <h1 class="center">Generation Mix</h1>
 <p class="center"><b>What is this?</b><br>This is a breakdown of how much each source of electricity is contributing to
     the grid. It is interesting to view this repeatedly over the course of the day, you may notice on windy days that
@@ -83,8 +90,9 @@
 <div id="todaysIntensity"></div>
 <h2 class="center">Sources Of Carbon</h2>
 <p class="center">Different source of power generate varying amounts of carbon dioxide. This chart displays the average
-carbon output for each source, measured in grams per kilowatt hour. As you can see Coal and Oil produce a large amount
-of carbon dioxide whereas Nuclear, Wind, Solar and Hydro generate almost nothing.</p>
+    carbon output for each source, measured in grams per kilowatt hour. As you can see Coal and Oil produce a large
+    amount
+    of carbon dioxide whereas Nuclear, Wind, Solar and Hydro generate almost nothing.</p>
 <div id="averageIntensity"></div>
 <div class="footer" style="height: 100px"></div>
 <script th:inline="javascript">
@@ -104,7 +112,7 @@ of carbon dioxide whereas Nuclear, Wind, Solar and Hydro generate almost nothing
 
     var ordinalValues = new Array();
 
-    for(var i = 0; i < barNodes.length; i++){
+    for (var i = 0; i < barNodes.length; i++) {
         ordinalValues.push(barNodes[i].name);
     }
 
@@ -174,18 +182,18 @@ of carbon dioxide whereas Nuclear, Wind, Solar and Hydro generate almost nothing
         var maxForecast = nodes[0].value;
         var maxActual = nodes[0].actual;
 
-        for(var i = 0; i < nodes.length; i++){
-            if(nodes[i].value > maxForecast){
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].value > maxForecast) {
                 maxForecast = nodes[i].value;
             }
-            if(nodes[i].actual > maxActual){
+            if (nodes[i].actual > maxActual) {
                 maxActual = nodes[i].actual;
             }
         }
 
-        if(maxForecast > maxActual){
+        if (maxForecast > maxActual) {
             return maxForecast;
-        }else{
+        } else {
             return maxActual;
         }
     };
@@ -194,20 +202,20 @@ of carbon dioxide whereas Nuclear, Wind, Solar and Hydro generate almost nothing
         var minForecast = nodes[0].value;
         var minActual = nodes[0].actual;
 
-        for(var i = 0; i < nodes.length; i++){
-            if(nodes[i].value < minForecast){
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].value < minForecast) {
                 minForecast = nodes[i].value;
             }
-            if(nodes[i].actual !== 0) {
+            if (nodes[i].actual !== 0) {
                 if (nodes[i].actual < minActual) {
                     minActual = nodes[i].actual;
                 }
             }
         }
 
-        if(minForecast < minActual){
+        if (minForecast < minActual) {
             return minForecast;
-        }else{
+        } else {
             return minActual;
         }
     };
